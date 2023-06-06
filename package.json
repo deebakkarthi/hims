@@ -1,0 +1,14 @@
+{
+  "name": "hims",
+  "version": "1.0.0",
+  "description": "Health Information Management System",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Deebakkarthi C R",
+  "license": "GPL-2.0-only",
+  "dependencies": {
+    "aws-iot-device-sdk-v2": "^1.13.1"
+  }
+}
