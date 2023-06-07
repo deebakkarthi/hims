@@ -2,61 +2,63 @@ const awscrt = require("aws-crt");
 const { exit } = require("process")
 const TextDecoder = require('util').TextDecoder;
 const mqtt = awscrt.mqtt
+const express = require("express");
+const expressWs = require("express-ws");
 
-const CERT = "cert";
-const KEY = "key";
-const CA_FILE = "ca_file";
+const CERT = "cert.pem";
+const KEY = "key.pem";
+const CA_FILE = "ca_file.pem";
 const ENDPOINT = "abmz93c7nf56o-ats.iot.us-east-1.amazonaws.com"
-const TOPIC = "test/pub"
-const COUNT = 10
+const TOPIC = "esp32/pub"
 
 function buildDirectMQTTConn() {
     let configBuilder = awscrt.iot.AwsIotMqttConnectionConfigBuilder.new_mtls_builder_from_path(CERT, KEY);
     configBuilder.with_certificate_authority(undefined, CA_FILE);
-    configBuilder.with_clean_session(false);
+    configBuilder.with_clean_session(true);
     configBuilder.with_client_id("test-" + Math.floor(Math.random() + 1000000000));
     configBuilder.with_endpoint(ENDPOINT);
     const config = configBuilder.build();
+    console.log(config);
     const client = new mqtt.MqttClient();
     return client.new_connection(config);
 
 }
 
-async function executeSession(connection) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const decoder = new TextDecoder('utf8');
-            const on_publish = async (topic, payload, dup, qos, retain) => {
-                const json = decoder.decode(payload);
-                console.log(`Publish received. topic:"${topic}" dup:${dup} qos:${qos} retain:${retain}`);
-                console.log(`Payload: ${json}`);
-            }
-            await connection.subscribe(TOPIC, mqtt.QoS.AtLeastOnce, on_publish);
-        }
-        catch (error) {
-            reject(error);
-        }
+const connection = buildDirectMQTTConn();
+connection.connect().catch((error) => {
+    console.log("Connection Error: ", error); exit(-1);
+});
+connection.on("connect", () => {
+    console.log("MQTT Connected");
+});
+connection.on("disconnect", () => {
+    console.log("MQTT Connection closed");
+});
+connection.subscribe(TOPIC, mqtt.QoS.AtLeastOnce);
+const app = express();
+expressWs(app);
+
+app.get("/", (req, res) => {
+    res.sendFile(__dirname + "/static/index.html");
+});
+
+app.use(express.static("static"));
+
+app.ws("/ws", (ws, req) => {
+    connection.on("message", (topic, payload, dup, qos, retain) => {
+        const decoder = new TextDecoder('utf8');
+        const json = decoder.decode(payload);
+        console.log(`Publish received. topic:"${topic}" dup:${dup} qos:${qos} retain:${retain}`);
+        console.log(`Payload: ${json}`);
+        ws.send(json);
     });
-}
+    ws.on("close", () => {
+        console.log("WebSocket connection closed");
+    })
+});
 
-async function main() {
-    // force node to wait 90 seconds before killing itself, promises do not keep node alive
-    // ToDo: we can get rid of this but it requires a refactor of the native connection binding that includes
-    //    pinning the libuv event loop while the connection is active or potentially active.
-    const timer = setInterval(() => { }, 90 * 1000);
+const port = 42069;
+app.listen(port, () => {
+    console.log(`Server started on port ${port}`);
+})
 
-    const connection = buildDirectMQTTConn();
-    await connection.connect().catch((error) => {
-        console.log("Connection Error: ", error); exit(-1);
-    });
-    await executeSession(connection).catch((error) => {
-        console.log("Session Error: ", error); exit(-1);
-    });
-    await connection.disconnect().catch((error) => { console.log("Disconnect error: " + error), exit(-1) });
-
-    // Allow node to die if the promise above resolved
-    clearTimeout(timer);
-
-}
-
-main();
