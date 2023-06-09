@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import dataclasses
 from awscrt import io, mqtt
 from awsiot import mqtt_connection_builder
 import time as t
@@ -8,13 +9,13 @@ from datetime import  datetime, time, timedelta
 
 def message_gen():
     message = {
-            "date": datetime.today().date().isoformat(),
+            "date": datetime(2023, 5, 30).date().isoformat(),
             "time": None,
-            "hr": random.normalvariate(72,10),
+            "hr": random.uniform(74,90),
             "spo2": random.uniform(95, 99),
-            "ax": random.normalvariate(0.67,6.89),
-            "ay": random.normalvariate(7.34, 6.73),
-            "az": random.normalvariate(0.4, 4.78),
+            "ax": random.uniform(-9.8, 9.8),
+            "ay": random.uniform(-9.8, 9.8),
+            "az": random.uniform(-9.8, 9.8),
             "gx": random.uniform(-6.28, 6.28),
             "gy": random.uniform(-6.28, 6.28),
             "gz": random.uniform(-6.28, 6.28),
@@ -25,9 +26,9 @@ def message_gen():
 # Define ENDPOINT, CLIENT_ID, PATH_TO_CERTIFICATE, PATH_TO_PRIVATE_KEY, PATH_TO_AMAZON_ROOT_CA_1, MESSAGE, TOPIC, and RANGE
 ENDPOINT = "abmz93c7nf56o-ats.iot.us-east-1.amazonaws.com"
 CLIENT_ID = "ESP32_HEALTH"
-PATH_TO_CERTIFICATE = "cert.pem"
-PATH_TO_PRIVATE_KEY = "key.pem"
-PATH_TO_AMAZON_ROOT_CA_1 = "ca_file.pem"
+PATH_TO_CERTIFICATE = "certificates/dc.pem"
+PATH_TO_PRIVATE_KEY = "certificates/private.pem"
+PATH_TO_AMAZON_ROOT_CA_1 = "certificates/root.pem"
 TOPIC = "esp32/pub"
 RANGE = 20
 
@@ -56,16 +57,17 @@ def main():
     print("Connected!")
 # Publish message to server desired number of times.
     print('Begin Publish')
-    curr_time = datetime.now().time()
-    delta = timedelta(minutes=0, seconds=1)
-    end_time = time(curr_time.hour+1, 0, 0)
+    start_hr = random.randint(14,21)
+    curr_time = time(start_hr,0,0)
+    delta = timedelta(minutes=1, seconds=random.randint(0, 59))
+    end_time = time(start_hr+1, 0, 0)
     while curr_time < end_time:
         message = message_gen()
         message["time"] = curr_time.isoformat()
         curr_time = (datetime.combine(datetime.now(),curr_time) + delta).time()
         mqtt_connection.publish(topic=TOPIC, payload=json.dumps(message), qos=mqtt.QoS.AT_LEAST_ONCE)
         print("Published: '" + json.dumps(message) + "' to the topic: " + "'esp32/pub'")
-        t.sleep(1)
+        t.sleep(0.5)
     print('Publish End')
     disconnect_future = mqtt_connection.disconnect()
     disconnect_future.result()

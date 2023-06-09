@@ -19,8 +19,20 @@
             </div>
         </nav>
     </div>
+
     <div class="container">
-        <canvas id="heartRateChart"></canvas>
+        <div class="row">
+            <div class="col">
+                <canvas id="heartRateChart"></canvas>
+            </div>
+            <div class="col">
+                <canvas id="accelerometer"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        You are probably <span id="activity"></span>. Your average
+        hearrate is <span id="avgHeartRate"></span>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"

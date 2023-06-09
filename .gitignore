@@ -2,3 +2,6 @@ node_modules/
 cert
 key
 ca_file
+embedded_code/certificates/**
+*.pem
+model/**

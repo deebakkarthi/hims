@@ -1,9 +1,11 @@
 const awscrt = require("aws-crt");
 const { exit } = require("process")
 const TextDecoder = require('util').TextDecoder;
+const { spawn } = require('child_process');
 const mqtt = awscrt.mqtt
 const express = require("express");
 const expressWs = require("express-ws");
+const bodyParser = require('body-parser');
 
 const CERT = "cert.pem";
 const KEY = "key.pem";
@@ -36,10 +38,33 @@ connection.on("disconnect", () => {
 });
 connection.subscribe(TOPIC, mqtt.QoS.AtLeastOnce);
 const app = express();
+app.use(bodyParser.json());
 expressWs(app);
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/static/index.html");
+});
+
+const pythonURL = 'http://localhost:42070';
+
+app.get("/python", async (req, res) => {
+    try {
+        const response = await fetch(pythonURL, {
+            method: 'POST',
+            body: JSON.stringify(req.body),
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+            throw new Error('Error sending request to Python server');
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 app.use(express.static("static"));

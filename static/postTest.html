@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Send POST Request</title>
+</head>
+<body>
+  <button id="sendButton">Send POST Request</button>
+
+  <script>
+    document.getElementById('sendButton').addEventListener('click', function() {
+      // Generate a random 50x3 array of float numbers
+      const inputArray = [];
+      for (let i = 0; i < 50; i++) {
+        const row = [];
+        for (let j = 0; j < 3; j++) {
+          const randomNumber = Math.random();
+          row.push(randomNumber);
+        }
+        inputArray.push(row);
+      }
+
+      const payload = JSON.stringify(inputArray);
+
+      fetch('http://localhost:42070/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: payload
+      })
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('Error sending POST request');
+        }
+        return response.json();
+      })
+      .then(function(data) {
+        console.log('Prediction:', data.prediction);
+        // Handle the prediction response here
+      })
+      .catch(function(error) {
+        console.error('Error:', error);
+        // Handle the error here
+      });
+    });
+  </script>
+</body>
+</html>
