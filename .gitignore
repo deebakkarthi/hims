@@ -5,3 +5,4 @@ ca_file
 embedded_code/certificates/**
 *.pem
 model/**
+embedded_code/secrets.h
